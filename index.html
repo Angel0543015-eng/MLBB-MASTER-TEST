@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MLBB MASTER TEST</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#080b16;
+color:#fff;
+padding:20px;
+}
+
+.container{
+max-width:850px;
+margin:auto;
+}
+
+.header{
+background:linear-gradient(135deg,#171333,#111c3b);
+border:1px solid #3d4670;
+border-radius:24px;
+padding:28px 22px;
+margin-bottom:20px;
+text-align:center;
+}
+
+.badge{
+display:inline-block;
+background:#29204f;
+color:#bcaeff;
+padding:7px 13px;
+border-radius:30px;
+font-size:12px;
+font-weight:bold;
+}
+
+h1{
+font-size:38px;
+margin:15px 0 5px;
+}
+
+.subtitle{
+color:#aeb7d5;
+}
+
+.progress{
+height:8px;
+background:#252c43;
+border-radius:20px;
+margin-top:22px;
+overflow:hidden;
+}
+
+.progressBar{
+height:100%;
+width:0%;
+background:linear-gradient(90deg,#785cff,#3e9cff);
+transition:.3s;
+}
+
+.card{
+background:#11172a;
+border:1px solid #303957;
+border-radius:20px;
+padding:21px;
+margin:16px 0;
+}
+
+.category{
+color:#a99aff;
+font-size:12px;
+font-weight:bold;
+text-transform:uppercase;
+}
+
+.question{
+font-size:18px;
+font-weight:bold;
+line-height:1.5;
+margin:9px 0 17px;
+}
+
+.option{
+display:block;
+background:#181f35;
+border:1px solid #303957;
+border-radius:14px;
+padding:14px;
+margin:9px 0;
+cursor:pointer;
+transition:.2s;
+}
+
+.option:hover{
+border-color:#8068ff;
+background:#1e2540;
+}
+
+.option input{
+margin-right:9px;
+accent-color:#8068ff;
+}
+
+textarea{
+width:100%;
+min-height:150px;
+resize:vertical;
+background:#0c1222;
+color:white;
+border:1px solid #303957;
+border-radius:14px;
+padding:14px;
+font-size:15px;
+line-height:1.5;
+outline:none;
+}
+
+textarea:focus{
+border-color:#8068ff;
+}
+
+.submit{
+width:100%;
+border:0;
+border-radius:16px;
+padding:17px;
+font-size:17px;
+font-weight:bold;
+color:white;
+background:linear-gradient(90deg,#7658ff,#398cff);
+cursor:pointer;
+margin:20px 0;
+}
+
+.result{
+display:none;
+text-align:center;
+}
+
+.score{
+font-size:55px;
+font-weight:900;
+margin:15px 0;
+}
+
+.rank{
+font-size:26px;
+font-weight:bold;
+}
+
+.note{
+color:#aeb7d5;
+line-height:1.6;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+<div class="badge">S41 • MASTER</div>
+<h1>👑 MLBB MASTER TEST</h1>
+<div class="subtitle">
+20 preguntas de selección múltiple + 10 respuestas libres
+</div>
+
+<div class="progress">
+<div class="progressBar" id="progressBar"></div>
+</div>
+</div>
+
+<form id="quiz">
+
+<!-- ===================== -->
+<!-- SELECCIÓN MÚLTIPLE -->
+<!-- ===================== -->
+
+<div id="multiple"></div>
+
+<!-- ===================== -->
+<!-- RESPUESTAS LIBRES -->
+<!-- ===================== -->
+
+<div id="free"></div>
+
+<button class="submit" type="submit">
+⚡ ENTREGAR TEST
+</button>
+
+</form>
+
+<div class="header result" id="result">
+
+<div class="badge">RESULTADO</div>
+
+<div class="score" id="score"></div>
+
+<div class="rank" id="rank"></div>
+
+<p class="note">
+Las 10 respuestas escritas quedan guardadas para que el evaluador pueda revisarlas.
+<br><br>
+Tu resultado final será determinado después de calificar las respuestas libres.
+</p>
+
+</div>
+
+</div>
+
+<script>
+
+const questions=[
+
+{
+cat:"Gold Lane",
+q:"Estás jugando Gold Lane. Turtle aparecerá pronto. Tu línea está empujada y ves al jungla enemigo en EXP Lane. ¿Qué harías?",
+a:[
+"Seguir pegándole a la torre y no mirar el mapa.",
+"Aprovechar que sabes dónde está el jungla para ayudar a tu equipo a preparar Turtle.",
+"Ir directamente a la jungla enemiga sin avisar.",
+"Volver a base aunque tengas buena vida y maná."
+],
+correct:1
+},
+
+{
+cat:"Jungla enemigo",
+q:"No sabes dónde está el jungla enemigo. ¿Qué deberías hacer?",
+a:[
+"Jugar como si estuviera muerto.",
+"Mirar el mapa, las líneas y los objetivos para intentar saber dónde puede aparecer.",
+"Entrar solo a su jungla.",
+"Ignorar el minimapa."
+],
+correct:1
+},
+
+{
+cat:"Ventaja de tiempo",
+q:"Tu Mid limpia la oleada antes que el Mid enemigo. ¿Qué ventaja tienes?",
+a:[
+"Puedes moverte primero para ayudar a otra línea u objetivo.",
+"Tu héroe hace más daño automáticamente.",
+"Obtienes una kill automáticamente.",
+"El enemigo pierde su Ultimate."
+],
+correct:0
+},
+
+{
+cat:"Turtle",
+q:"Turtle aparecerá en 15 segundos. Tu Mid y EXP tienen sus líneas empujadas. ¿Qué deberían intentar hacer?",
+a:[
+"Prepararse para controlar la zona de Turtle.",
+"Ir todos a buscar kills al otro lado del mapa.",
+"Volver todos a base.",
+"Ignorar Turtle."
+],
+correct:0
+},
+
+{
+cat:"Oleadas",
+q:"¿Por qué es importante controlar las oleadas de minions?",
+a:[
+"Porque pueden darte oro, experiencia y presión sobre las torres.",
+"Porque hacen que tus habilidades tengan menos cooldown.",
+"Porque aumentan tu velocidad.",
+"Porque hacen aparecer Turtle más rápido."
+],
+correct:0
+},
+
+{
+cat:"Lord",
+q:"Acaban de eliminar a 3 enemigos y Lord está disponible. ¿Qué debes comprobar antes de hacerlo?",
+a:[
+"Solo cuántas kills tienes.",
+"La vida de tu equipo, la posición de los enemigos restantes y el estado de Retribution.",
+"Qué skin tiene el jungla.",
+"Cuántas asistencias tiene el Roamer."
+],
+correct:1
+},
+
+{
+cat:"Retribution",
+q:"¿Por qué es importante saber si el jungla enemigo tiene Retribution disponible?",
+a:[
+"Porque puede usarlo para intentar robar el objetivo.",
+"Porque aumenta su HP.",
+"Porque hace que corra más rápido.",
+"Porque revela todo el mapa."
+],
+correct:0
+},
+
+{
+cat:"Assassin enemigo",
+q:"El Assassin enemigo desaparece del mapa. ¿Qué deberías hacer?",
+a:[
+"Asumir que volvió a base.",
+"Tener cuidado y pensar en qué línea podría aparecer.",
+"Entrar solo a su jungla.",
+"Ignorarlo."
+],
+correct:1
+},
+
+{
+cat:"Marksman",
+q:"Tu Marksman tiene mucho daño, pero el Assassin enemigo puede llegar fácilmente hasta él. ¿Qué debería hacer tu equipo?",
+a:[
+"Dejar solo al Marksman.",
+"Protegerlo y evitar que el Assassin llegue fácilmente hasta él.",
+"Hacer que el Marksman entre primero.",
+"Todos deben perseguir al Tank enemigo."
+],
+correct:1
+},
+
+{
+cat:"Draft",
+q:"¿Por qué podrías elegir un héroe que no sea considerado el más fuerte del meta?",
+a:[
+"Porque tiene una skin buena.",
+"Porque funciona muy bien contra los héroes enemigos y combina con tu equipo.",
+"Porque es más difícil de usar.",
+"Porque tiene muchas skins."
+],
+correct:1
+},
+
+{
+cat:"Counter",
+q:"Tu héroe tiene ventaja contra el héroe enemigo en línea. ¿Significa que seguramente ganarás?",
+a:[
+"Sí, siempre.",
+"No, también importan la habilidad del jugador, los objetos, las oleadas y las rotaciones.",
+"Sí, porque los counters ganan automáticamente.",
+"Solo depende de las skins."
+],
+correct:1
+},
+
+{
+cat:"Rotación",
+q:"Limpiaste tu Mid Lane antes que el enemigo. ¿Qué puedes hacer?",
+a:[
+"Esperar quieto.",
+"Moverte primero para ayudar a otra línea o conseguir información.",
+"Morir debajo de la torre enemiga.",
+"Ignorar el mapa."
+],
+correct:1
+},
+
+{
+cat:"Información",
+q:"¿Por qué puede ser malo mostrar dónde estás?",
+a:[
+"Porque el enemigo puede usar esa información para saber dónde estás y preparar una jugada.",
+"Porque pierdes oro.",
+"Porque pierdes experiencia automáticamente.",
+"Porque tus habilidades dejan de funcionar."
+],
+correct:0
+},
+
+{
+cat:"Kill vs Turtle",
+q:"Puedes perseguir a un enemigo con poca vida, pero Turtle aparecerá en pocos segundos. ¿Qué debes pensar?",
+a:[
+"Solo en conseguir la kill.",
+"En cuál de las dos opciones puede darle más ventaja a tu equipo.",
+"Nunca ir a Turtle.",
+"Siempre perseguir al enemigo."
+],
+correct:1
+},
+
+{
+cat:"Snowball",
+q:"Tu equipo consiguió varias kills. ¿Qué deberían intentar hacer después?",
+a:[
+"Seguir buscando kills sin parar.",
+"Convertir la ventaja en torres, objetivos, oro y control del mapa.",
+"Ir todos a base.",
+"Dejar de matar minions."
+],
+correct:1
+},
+
+{
+cat:"Vas perdiendo",
+q:"Tu equipo está muy por detrás y no puede ganar una pelea 5v5. ¿Qué opción puede ayudar más?",
+a:[
+"Seguir forzando peleas 5v5.",
+"Buscar oportunidades más seguras, defender las líneas y aprovechar errores enemigos.",
+"Entrar solo a la base enemiga.",
+"Dejar todas las torres."
+],
+correct:1
+},
+
+{
+cat:"Kaja",
+q:"En una actualización reciente, Kaja recibió cambios importantes. ¿Qué parte de su kit fue modificada de forma destacada?",
+a:[
+"Su Skill 2 y su Ultimate.",
+"Solo sus ataques básicos.",
+"Su sistema de emblemas.",
+"Sus skins."
+],
+correct:0
+},
+
+{
+cat:"Hirara",
+q:"¿Qué rol cumple principalmente Hirara?",
+a:[
+"Tank — Roam",
+"Mage — Mid",
+"Assassin — Jungle",
+"Marksman — Gold Lane"
+],
+correct:2
+},
+
+{
+cat:"Hirara",
+q:"¿Qué característica destaca en las habilidades de Hirara?",
+a:[
+"Puede usar sus dos armas para crear diferentes combinaciones de habilidades.",
+"Solo puede atacar con ataques básicos.",
+"No tiene movilidad.",
+"No puede hacer daño a héroes."
+],
+correct:0
+},
+
+{
+cat:"MASTER",
+q:"Tu equipo tiene ventaja de oro. Ganaron una pequeña pelea y Lord está disponible, pero no sabes dónde está el jungla enemigo. ¿Qué deberías revisar antes de decidir qué hacer?",
+a:[
+"Solo tus kills.",
+"La posición de los enemigos, sus muertes, las oleadas, la vida de tu equipo y Retribution.",
+"Solo quién tiene más oro.",
+"Solo cuántas torres llevas."
+],
+correct:1
+}
+
+];
+
+const freeQuestions=[
+
+["Macro",
+"Tu equipo está perdiendo. ¿Qué harías para intentar recuperar la partida sin comenzar peleas 5 contra 5 todo el tiempo? Explica tu respuesta."],
+
+["Jungla enemigo",
+"No sabes dónde está el jungla enemigo. ¿Cómo intentarías descubrir dónde puede estar?"],
+
+["Minions",
+"¿Por qué a veces es mejor esperar antes de matar una oleada de minions?"],
+
+["Turtle",
+"Turtle está a punto de aparecer, pero tu Gold Laner tiene muchos minions en su torre. ¿Qué harías como equipo?"],
+
+["Lord",
+"Tu equipo quiere hacer Lord, pero el enemigo todavía puede pelear. ¿Qué cosas revisarías antes de empezar Lord?"],
+
+["Teamfight",
+"Tu Marksman es el jugador más fuerte de tu equipo, pero el Assassin enemigo siempre intenta matarlo. ¿Cómo protegerías al Marksman?"],
+
+["Draft",
+"El enemigo eligió varios héroes que son fuertes contra tu héroe principal. ¿Qué harías durante el draft?"],
+
+["Mapa",
+"¿Por qué es importante saber dónde están los enemigos y también dónde no están?"],
+
+["Ventaja",
+"Tu equipo tiene 5 kills más que el enemigo, pero casi tienen el mismo oro. ¿Por qué puede estar pasando esto?"],
+
+["MASTER — Situación completa",
+"Minuto 14. Tu equipo tiene más oro. Lord está disponible. Ves al jungla enemigo en Gold Lane y tu Mid tiene la línea empujada, pero tu EXP está muerto y volverá en 18 segundos. Explica paso por paso qué harías y por qué."]
+
+];
+
+const multiple=document.getElementById("multiple");
+const free=document.getElementById("free");
+
+questions.forEach((x,i)=>{
+
+let card=document.createElement("div");
+card.className="card";
+
+let options="";
+
+x.a.forEach((option,j)=>{
+
+options+=`
+<label class="option">
+<input type="radio" name="q${i}" value="${j}">
+${option}
+</label>
+`;
+
+});
+
+card.innerHTML=`
+<div class="category">Pregunta ${i+1} • ${x.cat}</div>
+<div class="question">${x.q}</div>
+${options}
+`;
+
+multiple.appendChild(card);
+
+});
+
+freeQuestions.forEach((x,i)=>{
+
+let card=document.createElement("div");
+card.className="card";
+
+card.innerHTML=`
+<div class="category">Pregunta ${i+21} • ${x[0]}</div>
+<div class="question">${x[1]}</div>
+<textarea name="free${i}" placeholder="Escribe tu respuesta aquí..."></textarea>
+`;
+
+free.appendChild(card);
+
+});
+
+function updateProgress(){
+
+let completed=0;
+
+questions.forEach((q,i)=>{
+
+if(document.querySelector(`input[name="q${i}"]:checked`)){
+completed++;
+}
+
+});
+
+freeQuestions.forEach((q,i)=>{
+
+let text=document.querySelector(`[name="free${i}"]`);
+
+if(text && text.value.trim().length>0){
+completed++;
+}
+
+});
+
+document.getElementById("progressBar").style.width=
+(completed/30*100)+"%";
+
+}
+
+document.getElementById("quiz").addEventListener("input",updateProgress);
+
+document.getElementById("quiz").addEventListener("submit",function(e){
+
+e.preventDefault();
+
+let score=0;
+
+questions.forEach((q,i)=>{
+
+let selected=document.querySelector(`input[name="q${i}"]:checked`);
+
+if(selected && Number(selected.value)===q.correct){
+score+=2;
+}
+
+});
+
+document.getElementById("quiz").style.display="none";
+
+document.getElementById("result").style.display="block";
+
+document.getElementById("score").innerText=
+score+" / 40";
+
+let percentage=score/40*100;
+
+let rank="";
+
+if(percentage>=90){
+rank="👑 MASTER";
+}else if(percentage>=75){
+rank="💎 EXPERTO";
+}else if(percentage>=60){
+rank="🥇 AVANZADO";
+}else if(percentage>=40){
+rank="🥈 INTERMEDIO";
+}else{
+rank="🥉 NOVATO";
+}
+
+document.getElementById("rank").innerText=rank;
+
+window.scrollTo(0,0);
+
+});
+
+</script>
+
+</body>
+</html>
