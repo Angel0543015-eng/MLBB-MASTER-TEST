@@ -290,7 +290,7 @@ const response =
 await fetch(
 
 SUPABASE_URL +
-"/rest/v1/rpc/get_test_result",
+"/rest/v1/rpc/get_exam_result",
 
 {
 
@@ -303,7 +303,7 @@ headers:{
 },
 
 body:JSON.stringify({
-code:code
+p_code:code
 })
 
 }
