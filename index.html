@@ -180,6 +180,18 @@ line-height:1.6;
 
 <form id="quiz">
 
+<div class="card">
+  <div class="category">DATOS DEL JUGADOR</div>
+  <div class="question">Escribe tu nombre o nickname de MLBB</div>
+  <input
+    type="text"
+    id="playerName"
+    placeholder="Ejemplo: Angel123"
+    required
+    style="width:100%;padding:14px;border-radius:14px;border:1px solid #303957;background:#0c1222;color:white;font-size:16px;"
+  >
+</div>
+  
 <!-- ===================== -->
 <!-- SELECCIÓN MÚLTIPLE -->
 <!-- ===================== -->
@@ -218,6 +230,10 @@ Tu resultado final será determinado después de calificar las respuestas libres
 
 <script>
 
+const SUPABASE_URL = "https://sstwghkyoarubnrnfmxc.supabase.co";
+  
+const SUPABASE_KEY = "sb_publishable_2TehQVkw3Ct29JuDxeivXQ_bYY4WWFZ";
+  
 const questions=[
 
 {
@@ -571,7 +587,136 @@ document.getElementById("progressBar").style.width=
 
 document.getElementById("quiz").addEventListener("input",updateProgress);
 
-document.getElementById("quiz").addEventListener("submit",function(e){
+document.getElementById("quiz").addEventListener("submit", async function(e){
+
+e.preventDefault();
+
+const playerName = document.getElementById("playerName").value.trim();
+
+if(!playerName){
+    alert("Escribe tu nombre o nickname antes de entregar el test.");
+    return;
+}
+
+let score = 0;
+let multipleAnswers = [];
+
+questions.forEach((q,i)=>{
+
+    let selected = document.querySelector(`input[name="q${i}"]:checked`);
+
+    let answer = selected ? Number(selected.value) : null;
+
+    multipleAnswers.push(answer);
+
+    if(answer !== null && answer === q.correct){
+        score += 2;
+    }
+
+});
+
+let freeAnswers = [];
+
+freeQuestions.forEach((q,i)=>{
+
+    let answer = document.querySelector(`[name="free${i}"]`).value.trim();
+
+    freeAnswers.push(answer);
+
+});
+
+const submission = {
+
+    player_name: playerName,
+
+    multiple_answers: multipleAnswers,
+
+    free_answers: freeAnswers,
+
+    multiple_score: score,
+
+    free_score: null,
+
+    final_score: null,
+
+    published: false
+
+};
+
+try{
+
+    const response = await fetch(
+        SUPABASE_URL + "/rest/v1/submissions",
+        {
+            method:"POST",
+
+            headers:{
+                "apikey":SUPABASE_KEY,
+                "Authorization":"Bearer " + SUPABASE_KEY,
+                "Content-Type":"application/json",
+                "Prefer":"return=minimal"
+            },
+
+            body:JSON.stringify(submission)
+        }
+    );
+
+    if(!response.ok){
+
+        const errorText = await response.text();
+
+        console.error(errorText);
+
+        alert("No se pudo guardar el examen. Inténtalo nuevamente.");
+
+        return;
+    }
+
+    document.getElementById("quiz").style.display="none";
+
+    document.getElementById("result").style.display="block";
+
+    document.getElementById("score").innerText =
+        score + " / 40";
+
+    let percentage = score / 40 * 100;
+
+    let rank = "";
+
+    if(percentage >= 90){
+        rank = "👑 MASTER";
+    }
+    else if(percentage >= 75){
+        rank = "💎 EXPERTO";
+    }
+    else if(percentage >= 60){
+        rank = "🥇 AVANZADO";
+    }
+    else if(percentage >= 40){
+        rank = "🥈 INTERMEDIO";
+    }
+    else{
+        rank = "🥉 NOVATO";
+    }
+
+    document.getElementById("rank").innerText = rank;
+
+    document.querySelector(".note").innerHTML =
+        "Tu examen fue enviado correctamente.<br><br>" +
+        "Las 10 respuestas escritas serán revisadas por el evaluador.";
+
+    window.scrollTo(0,0);
+
+}
+catch(error){
+
+    console.error(error);
+
+    alert("Ocurrió un error al enviar el examen.");
+
+}
+
+});
 
 e.preventDefault();
 
@@ -584,35 +729,6 @@ let selected=document.querySelector(`input[name="q${i}"]:checked`);
 if(selected && Number(selected.value)===q.correct){
 score+=2;
 }
-
-});
-
-document.getElementById("quiz").style.display="none";
-
-document.getElementById("result").style.display="block";
-
-document.getElementById("score").innerText=
-score+" / 40";
-
-let percentage=score/40*100;
-
-let rank="";
-
-if(percentage>=90){
-rank="👑 MASTER";
-}else if(percentage>=75){
-rank="💎 EXPERTO";
-}else if(percentage>=60){
-rank="🥇 AVANZADO";
-}else if(percentage>=40){
-rank="🥈 INTERMEDIO";
-}else{
-rank="🥉 NOVATO";
-}
-
-document.getElementById("rank").innerText=rank;
-
-window.scrollTo(0,0);
 
 });
 
