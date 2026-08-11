@@ -726,20 +726,6 @@ catch(error){
 
 });
 
-e.preventDefault();
-
-let score=0;
-
-questions.forEach((q,i)=>{
-
-let selected=document.querySelector(`input[name="q${i}"]:checked`);
-
-if(selected && Number(selected.value)===q.correct){
-score+=2;
-}
-
-});
-
 </script>
 
 </body>
