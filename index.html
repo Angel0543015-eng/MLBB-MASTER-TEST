@@ -654,7 +654,7 @@ try{
                 "apikey":SUPABASE_KEY,
                 "Authorization":"Bearer " + SUPABASE_KEY,
                 "Content-Type":"application/json",
-                "Prefer":"return=minimal"
+                "Prefer":"return=representation"
             },
 
             body:JSON.stringify(submission)
@@ -671,6 +671,10 @@ try{
 
         return;
     }
+
+const savedExam = await response.json();
+
+const resultCode = savedExam[0]?.result_code;
 
     document.getElementById("quiz").style.display="none";
 
@@ -701,9 +705,13 @@ try{
 
     document.getElementById("rank").innerText = rank;
 
-    document.querySelector(".note").innerHTML =
-        "Tu examen fue enviado correctamente.<br><br>" +
-        "Las 10 respuestas escritas serán revisadas por el evaluador.";
+document.querySelector(".note").innerHTML =
+    "Tu examen fue enviado correctamente.<br><br>" +
+    "<strong>Tu código de resultado:</strong><br>" +
+    "<span style='font-size:24px;font-weight:bold;color:#bcaeff;'>" +
+    (resultCode || "PENDIENTE") +
+    "</span><br><br>" +
+    "Guarda este código. Lo necesitarás para consultar tu resultado.";
 
     window.scrollTo(0,0);
 
