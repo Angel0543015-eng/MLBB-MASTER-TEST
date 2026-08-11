@@ -674,7 +674,12 @@ try{
 
 const savedExam = await response.json();
 
-const resultCode = savedExam[0]?.result_code;
+console.log("EXAMEN GUARDADO:", savedExam);
+
+const resultCode =
+    Array.isArray(savedExam)
+    ? savedExam[0]?.result_code
+    : savedExam?.result_code;
 
     document.getElementById("quiz").style.display="none";
 
