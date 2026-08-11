@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>MLBB MASTER • Admin</title>
+
+<style>
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#080b16;
+color:#fff;
+padding:20px;
+}
+
+.container{
+max-width:950px;
+margin:auto;
+}
+
+.header{
+background:linear-gradient(135deg,#171333,#111c3b);
+border:1px solid #3d4670;
+border-radius:24px;
+padding:28px 22px;
+margin-bottom:20px;
+text-align:center;
+}
+
+.badge{
+display:inline-block;
+background:#29204f;
+color:#bcaeff;
+padding:7px 13px;
+border-radius:30px;
+font-size:12px;
+font-weight:bold;
+}
+
+h1{
+font-size:32px;
+margin:15px 0 5px;
+}
+
+.subtitle{
+color:#aeb7d5;
+}
+
+.card{
+background:#11172a;
+border:1px solid #303957;
+border-radius:20px;
+padding:21px;
+margin:16px 0;
+}
+
+input,textarea{
+width:100%;
+background:#0c1222;
+color:#fff;
+border:1px solid #303957;
+border-radius:14px;
+padding:14px;
+font-size:15px;
+outline:none;
+margin:8px 0;
+}
+
+input:focus,
+textarea:focus{
+border-color:#8068ff;
+}
+
+button{
+border:0;
+border-radius:14px;
+padding:14px 18px;
+font-size:15px;
+font-weight:bold;
+color:#fff;
+background:linear-gradient(90deg,#7658ff,#398cff);
+cursor:pointer;
+margin-top:8px;
+}
+
+button.secondary{
+background:#252c43;
+}
+
+.hidden{
+display:none;
+}
+
+.error{
+color:#ff8c8c;
+margin-top:10px;
+}
+
+.success{
+color:#7dffb2;
+margin-top:10px;
+}
+
+.player{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:15px;
+padding:16px;
+background:#181f35;
+border:1px solid #303957;
+border-radius:15px;
+margin:10px 0;
+}
+
+.player-info{
+flex:1;
+}
+
+.player-name{
+font-weight:bold;
+font-size:17px;
+}
+
+.player-date{
+color:#9da7c5;
+font-size:12px;
+margin-top:5px;
+}
+
+.answer{
+background:#0c1222;
+border:1px solid #303957;
+border-radius:14px;
+padding:15px;
+margin:12px 0;
+}
+
+.question{
+font-weight:bold;
+margin-bottom:8px;
+}
+
+.answer-text{
+color:#dce2f5;
+line-height:1.6;
+white-space:pre-wrap;
+}
+
+.score-input{
+max-width:180px;
+}
+
+.total{
+font-size:28px;
+font-weight:bold;
+margin:20px 0;
+}
+
+.status{
+display:inline-block;
+padding:6px 10px;
+border-radius:20px;
+font-size:12px;
+font-weight:bold;
+background:#332d16;
+color:#ffd66b;
+}
+
+.status.done{
+background:#163522;
+color:#7dffb2;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+<div class="badge">🔐 ADMINISTRADOR</div>
+<h1>👑 MLBB MASTER</h1>
+<div class="subtitle">
+Panel privado de evaluación
+</div>
+</div>
+
+
+<!-- LOGIN -->
+
+<div id="loginSection" class="card">
+
+<h2>Iniciar sesión</h2>
+
+<input
+type="email"
+id="email"
+placeholder="Correo del administrador"
+autocomplete="email"
+>
+
+<input
+type="password"
+id="password"
+placeholder="Contraseña"
+autocomplete="current-password"
+>
+
+<button id="loginButton">
+🔐 ENTRAR
+</button>
+
+<div id="loginError" class="error"></div>
+
+</div>
+
+
+<!-- PANEL -->
+
+<div id="adminSection" class="hidden">
+
+<div class="card">
+
+<h2>📋 Exámenes recibidos</h2>
+
+<button id="refreshButton" class="secondary">
+🔄 Actualizar
+</button>
+
+<div id="submissions"></div>
+
+</div>
+
+
+<!-- EXAMEN SELECCIONADO -->
+
+<div id="examSection" class="card hidden">
+
+<h2 id="examPlayer"></h2>
+
+<div id="multipleSection"></div>
+
+<h2>✍️ Respuestas libres</h2>
+
+<div id="freeSection"></div>
+
+<div class="total">
+Puntuación selección múltiple:
+<span id="multipleScore">0</span> / 40
+</div>
+
+<div class="total">
+Puntuación respuestas libres:
+<span id="freeScore">0</span> / 60
+</div>
+
+<div class="total">
+🏆 Resultado final:
+<span id="finalScore">0</span> / 100
+</div>
+
+<button id="saveButton">
+✅ GUARDAR CALIFICACIÓN
+</button>
+
+<div id="saveMessage"></div>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+const SUPABASE_URL =
+"https://sstwghkyoarubnrnfmxc.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_2TehQVkw3Ct29JuDxeivXQ_bYY4WWFZ";
+
+
+let currentUser = null;
+let currentExam = null;
+
+
+/* =========================
+   SUPABASE REQUEST
+========================= */
+
+async function supabaseRequest(path,options={}){
+
+const headers = {
+
+"apikey":SUPABASE_KEY,
+
+"Authorization":
+"Bearer " + SUPABASE_KEY,
+
+"Content-Type":
+"application/json",
+
+...options.headers
+
+};
+
+const response =
+await fetch(
+SUPABASE_URL + path,
+{
+...options,
+headers
+}
+);
+
+if(!response.ok){
+
+const text =
+await response.text();
+
+throw new Error(text);
+
+}
+
+return response;
+
+}
+
+
+/* =========================
+   LOGIN
+========================= */
+
+document
+.getElementById("loginButton")
+.addEventListener("click",async()=>{
+
+const email =
+document.getElementById("email").value.trim();
+
+const password =
+document.getElementById("password").value;
+
+const error =
+document.getElementById("loginError");
+
+error.innerText="";
+
+if(!email || !password){
+
+error.innerText =
+"Escribe tu correo y contraseña.";
+
+return;
+
+}
+
+try{
+
+const response =
+await fetch(
+SUPABASE_URL +
+"/auth/v1/token?grant_type=password",
+{
+method:"POST",
+
+headers:{
+"apikey":SUPABASE_KEY,
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({
+email:email,
+password:password
+})
+
+}
+);
+
+const data =
+await response.json();
+
+if(!response.ok){
+
+throw new Error(
+data.error_description ||
+"Correo o contraseña incorrectos."
+);
+
+}
+
+currentUser=data;
+
+localStorage.setItem(
+"mlbb_access_token",
+data.access_token
+);
+
+localStorage.setItem(
+"mlbb_refresh_token",
+data.refresh_token
+);
+
+document
+.getElementById("loginSection")
+.classList.add("hidden");
+
+document
+.getElementById("adminSection")
+.classList.remove("hidden");
+
+loadSubmissions();
+
+}
+catch(error){
+
+error.textContent =
+error.message;
+
+}
+
+});
+
+
+/* =========================
+   CARGAR EXÁMENES
+========================= */
+
+async function loadSubmissions(){
+
+const container =
+document.getElementById("submissions");
+
+container.innerHTML =
+"⏳ Cargando exámenes...";
+
+try{
+
+const response =
+await supabaseRequest(
+"/rest/v1/submissions?select=*&order=created_at.desc"
+);
+
+const exams =
+await response.json();
+
+container.innerHTML="";
+
+if(exams.length===0){
+
+container.innerHTML =
+"<p>No hay exámenes todavía.</p>";
+
+return;
+
+}
+
+exams.forEach(exam=>{
+
+const div =
+document.createElement("div");
+
+div.className="player";
+
+const status =
+exam.published
+? `<span class="status done">PUBLICADO</span>`
+: `<span class="status">PENDIENTE</span>`;
+
+div.innerHTML=`
+
+<div class="player-info">
+
+<div class="player-name">
+${escapeHTML(exam.player_name)}
+</div>
+
+<div class="player-date">
+${new Date(exam.created_at).toLocaleString()}
+</div>
+
+${status}
+
+</div>
+
+<button>
+ABRIR
+</button>
+
+`;
+
+div
+.querySelector("button")
+.addEventListener(
+"click",
+()=>openExam(exam)
+);
+
+container.appendChild(div);
+
+});
+
+}
+catch(error){
+
+container.innerHTML =
+`<div class="error">
+No se pudieron cargar los exámenes.
+</div>`;
+
+console.error(error);
+
+}
+
+}
+
+
+/* =========================
+   ABRIR EXAMEN
+========================= */
+
+function openExam(exam){
+
+currentExam=exam;
+
+document
+.getElementById("examSection")
+.classList.remove("hidden");
+
+document
+.getElementById("examPlayer")
+.innerText =
+"👤 " + exam.player_name;
+
+
+/* MULTIPLE */
+
+const multiple =
+document.getElementById("multipleSection");
+
+multiple.innerHTML =
+"<h2>📝 Selección múltiple</h2>";
+
+exam.multiple_answers.forEach(
+(answer,index)=>{
+
+const div =
+document.createElement("div");
+
+div.className="answer";
+
+div.innerHTML=`
+
+<div class="question">
+Pregunta ${index+1}
+</div>
+
+<div class="answer-text">
+Respuesta seleccionada: ${
+answer === null
+? "Sin responder"
+: Number(answer)+1
+}
+</div>
+
+`;
+
+multiple.appendChild(div);
+
+});
+
+
+document
+.getElementById("multipleScore")
+.innerText =
+exam.multiple_score + " / 40";
+
+
+/* FREE */
+
+const free =
+document.getElementById("freeSection");
+
+free.innerHTML="";
+
+exam.free_answers.forEach(
+(answer,index)=>{
+
+const div =
+document.createElement("div");
+
+div.className="answer";
+
+div.innerHTML=`
+
+<div class="question">
+Pregunta ${index+21}
+</div>
+
+<div class="answer-text">
+${escapeHTML(answer || "Sin respuesta")}
+</div>
+
+<label>
+Puntos para esta respuesta:
+</label>
+
+<input
+class="score-input free-score"
+type="number"
+min="0"
+max="6"
+value="0"
+>
+
+`;
+
+free.appendChild(div);
+
+});
+
+
+calculateFreeScore();
+
+}
+
+
+/* =========================
+   CALCULAR LIBRES
+========================= */
+
+document
+.addEventListener(
+"input",
+function(e){
+
+if(
+e.target.classList.contains(
+"free-score"
+)
+){
+
+calculateFreeScore();
+
+}
+
+});
+
+
+function calculateFreeScore(){
+
+const inputs =
+document.querySelectorAll(
+".free-score"
+);
+
+let total=0;
+
+inputs.forEach(input=>{
+
+let value =
+Number(input.value) || 0;
+
+if(value<0)value=0;
+
+if(value>6)value=6;
+
+input.value=value;
+
+total+=value;
+
+});
+
+document
+.getElementById("freeScore")
+.innerText =
+total + " / 60";
+
+document
+.getElementById("finalScore")
+.innerText =
+(Number(currentExam?.multiple_score)||0)
++
+total;
+
+}
+
+
+/* =========================
+   GUARDAR CALIFICACIÓN
+========================= */
+
+document
+.getElementById("saveButton")
+.addEventListener(
+"click",
+async()=>{
+
+if(!currentExam)return;
+
+const inputs =
+document.querySelectorAll(
+".free-score"
+);
+
+let freeScore=0;
+
+inputs.forEach(input=>{
+
+freeScore +=
+Number(input.value)||0;
+
+});
+
+const finalScore =
+Number(currentExam.multiple_score||0)
++
+freeScore;
+
+try{
+
+await supabaseRequest(
+"/rest/v1/submissions?id=eq."+currentExam.id,
+{
+
+method:"PATCH",
+
+headers:{
+"Prefer":"return=minimal"
+},
+
+body:JSON.stringify({
+
+free_score:freeScore,
+
+final_score:finalScore,
+
+published:true
+
+})
+
+}
+);
+
+currentExam.free_score =
+freeScore;
+
+currentExam.final_score =
+finalScore;
+
+currentExam.published=true;
+
+document
+.getElementById("saveMessage")
+.className="success";
+
+document
+.getElementById("saveMessage")
+.innerText =
+"✅ Calificación guardada correctamente.";
+
+loadSubmissions();
+
+}
+catch(error){
+
+console.error(error);
+
+document
+.getElementById("saveMessage")
+.className="error";
+
+document
+.getElementById("saveMessage")
+.innerText =
+"No se pudo guardar la calificación.";
+
+}
+
+});
+
+
+/* =========================
+   ACTUALIZAR
+========================= */
+
+document
+.getElementById("refreshButton")
+.addEventListener(
+"click",
+loadSubmissions
+);
+
+
+/* =========================
+   SEGURIDAD HTML
+========================= */
+
+function escapeHTML(value){
+
+return String(value)
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+
+}
+
+</script>
+
+</body>
+</html>
