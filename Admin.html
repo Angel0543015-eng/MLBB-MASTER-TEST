@@ -300,10 +300,12 @@ async function supabaseRequest(path,options={}){
 
 const headers = {
 
-"apikey":SUPABASE_KEY,
+"apikey": SUPABASE_KEY,
 
 "Authorization":
-"Bearer " + SUPABASE_KEY,
+"Bearer " + (
+currentUser?.access_token || SUPABASE_KEY
+),
 
 "Content-Type":
 "application/json",
