@@ -125,6 +125,21 @@ textarea:focus{
 border-color:#8068ff;
 }
 
+.player-input{
+width:100%;
+padding:14px;
+border-radius:14px;
+border:1px solid #303957;
+background:#0c1222;
+color:white;
+font-size:16px;
+outline:none;
+}
+
+.player-input:focus{
+border-color:#8068ff;
+}
+
 .submit{
 width:100%;
 border:0;
@@ -136,6 +151,11 @@ color:white;
 background:linear-gradient(90deg,#7658ff,#398cff);
 cursor:pointer;
 margin:20px 0;
+}
+
+.submit:disabled{
+opacity:.6;
+cursor:not-allowed;
 }
 
 .result{
@@ -159,6 +179,38 @@ color:#aeb7d5;
 line-height:1.6;
 }
 
+.error-box{
+display:none;
+background:#351820;
+border:1px solid #8d3548;
+border-radius:14px;
+padding:15px;
+margin-top:15px;
+color:#ffb5c0;
+line-height:1.5;
+text-align:left;
+word-break:break-word;
+}
+
+@media(max-width:600px){
+
+h1{
+font-size:30px;
+}
+
+.score{
+font-size:45px;
+}
+
+body{
+padding:12px;
+}
+
+.card{
+padding:17px;
+}
+
+}
 </style>
 </head>
 
@@ -167,8 +219,11 @@ line-height:1.6;
 <div class="container">
 
 <div class="header">
+
 <div class="badge">S41 • MASTER</div>
+
 <h1>👑 MLBB MASTER TEST</h1>
+
 <div class="subtitle">
 20 preguntas de selección múltiple + 10 respuestas libres
 </div>
@@ -176,49 +231,74 @@ line-height:1.6;
 <div class="progress">
 <div class="progressBar" id="progressBar"></div>
 </div>
+
 </div>
+
 
 <form id="quiz">
 
+<!-- DATOS DEL JUGADOR -->
+
 <div class="card">
-  <div class="category">DATOS DEL JUGADOR</div>
-  <div class="question">Escribe tu nombre o nickname de MLBB</div>
-  <input
-    type="text"
-    id="playerName"
-    placeholder="Ejemplo: Angel123"
-    required
-    style="width:100%;padding:14px;border-radius:14px;border:1px solid #303957;background:#0c1222;color:white;font-size:16px;"
-  >
+
+<div class="category">
+DATOS DEL JUGADOR
 </div>
-  
-<!-- ===================== -->
+
+<div class="question">
+Escribe tu nombre o nickname de MLBB
+</div>
+
+<input
+type="text"
+id="playerName"
+class="player-input"
+placeholder="Ejemplo: Angel123"
+required
+>
+
+</div>
+
+
 <!-- SELECCIÓN MÚLTIPLE -->
-<!-- ===================== -->
 
 <div id="multiple"></div>
 
-<!-- ===================== -->
+
 <!-- RESPUESTAS LIBRES -->
-<!-- ===================== -->
 
 <div id="free"></div>
 
-<button class="submit" type="submit">
+
+<div id="errorBox" class="error-box"></div>
+
+
+<button
+class="submit"
+id="submitButton"
+type="submit"
+>
 ⚡ ENTREGAR TEST
 </button>
 
 </form>
 
+
+<!-- RESULTADO INICIAL -->
+
 <div class="header result" id="result">
 
-<div class="badge">RESULTADO</div>
+<div class="badge">
+RESULTADO
+</div>
 
-<div class="score" id="score"></div>
+<div class="score" id="score">
+</div>
 
-<div class="rank" id="rank"></div>
+<div class="rank" id="rank">
+</div>
 
-<p class="note">
+<p class="note" id="resultNote">
 Las 10 respuestas escritas quedan guardadas para que el evaluador pueda revisarlas.
 <br><br>
 Tu resultado final será determinado después de calificar las respuestas libres.
@@ -228,13 +308,25 @@ Tu resultado final será determinado después de calificar las respuestas libres
 
 </div>
 
+
 <script>
 
-const SUPABASE_URL = "https://sstwghkyoarubnrnfmxc.supabase.co";
-  
-const SUPABASE_KEY = "sb_publishable_2TehQVkw3Ct29JuDxeivXQ_bYY4WWFZ";
-  
-const questions=[
+/* =========================================================
+   SUPABASE
+========================================================= */
+
+const SUPABASE_URL =
+"https://sstwghkyoarubnrnfmxc.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_2TehQVkw3Ct29JuDxeivXQ_bYY4WWFZ";
+
+
+/* =========================================================
+   PREGUNTAS
+========================================================= */
+
+const questions = [
 
 {
 cat:"Gold Lane",
@@ -478,254 +570,557 @@ correct:1
 
 ];
 
-const freeQuestions=[
 
-["Macro",
-"Tu equipo está perdiendo. ¿Qué harías para intentar recuperar la partida sin comenzar peleas 5 contra 5 todo el tiempo? Explica tu respuesta."],
+/* =========================================================
+   RESPUESTAS LIBRES
+========================================================= */
 
-["Jungla enemigo",
-"No sabes dónde está el jungla enemigo. ¿Cómo intentarías descubrir dónde puede estar?"],
+const freeQuestions = [
 
-["Minions",
-"¿Por qué a veces es mejor esperar antes de matar una oleada de minions?"],
+[
+"Macro",
+"Tu equipo está perdiendo. ¿Qué harías para intentar recuperar la partida sin comenzar peleas 5 contra 5 todo el tiempo? Explica tu respuesta."
+],
 
-["Turtle",
-"Turtle está a punto de aparecer, pero tu Gold Laner tiene muchos minions en su torre. ¿Qué harías como equipo?"],
+[
+"Jungla enemigo",
+"No sabes dónde está el jungla enemigo. ¿Cómo intentarías descubrir dónde puede estar?"
+],
 
-["Lord",
-"Tu equipo quiere hacer Lord, pero el enemigo todavía puede pelear. ¿Qué cosas revisarías antes de empezar Lord?"],
+[
+"Minions",
+"¿Por qué a veces es mejor esperar antes de matar una oleada de minions?"
+],
 
-["Teamfight",
-"Tu Marksman es el jugador más fuerte de tu equipo, pero el Assassin enemigo siempre intenta matarlo. ¿Cómo protegerías al Marksman?"],
+[
+"Turtle",
+"Turtle está a punto de aparecer, pero tu Gold Laner tiene muchos minions en su torre. ¿Qué harías como equipo?"
+],
 
-["Draft",
-"El enemigo eligió varios héroes que son fuertes contra tu héroe principal. ¿Qué harías durante el draft?"],
+[
+"Lord",
+"Tu equipo quiere hacer Lord, pero el enemigo todavía puede pelear. ¿Qué cosas revisarías antes de empezar Lord?"
+],
 
-["Mapa",
-"¿Por qué es importante saber dónde están los enemigos y también dónde no están?"],
+[
+"Teamfight",
+"Tu Marksman es el jugador más fuerte de tu equipo, pero el Assassin enemigo siempre intenta matarlo. ¿Cómo protegerías al Marksman?"
+],
 
-["Ventaja",
-"Tu equipo tiene 5 kills más que el enemigo, pero casi tienen el mismo oro. ¿Por qué puede estar pasando esto?"],
+[
+"Draft",
+"El enemigo eligió varios héroes que son fuertes contra tu héroe principal. ¿Qué harías durante el draft?"
+],
 
-["MASTER — Situación completa",
-"Minuto 14. Tu equipo tiene más oro. Lord está disponible. Ves al jungla enemigo en Gold Lane y tu Mid tiene la línea empujada, pero tu EXP está muerto y volverá en 18 segundos. Explica paso por paso qué harías y por qué."]
+[
+"Mapa",
+"¿Por qué es importante saber dónde están los enemigos y también dónde no están?"
+],
+
+[
+"Ventaja",
+"Tu equipo tiene 5 kills más que el enemigo, pero casi tienen el mismo oro. ¿Por qué puede estar pasando esto?"
+],
+
+[
+"MASTER — Situación completa",
+"Minuto 14. Tu equipo tiene más oro. Lord está disponible. Ves al jungla enemigo en Gold Lane y tu Mid tiene la línea empujada, pero tu EXP está muerto y volverá en 18 segundos. Explica paso por paso qué harías y por qué."
+]
 
 ];
 
-const multiple=document.getElementById("multiple");
-const free=document.getElementById("free");
 
-questions.forEach((x,i)=>{
+/* =========================================================
+   ELEMENTOS
+========================================================= */
 
-let card=document.createElement("div");
+const multiple =
+document.getElementById("multiple");
+
+const free =
+document.getElementById("free");
+
+const quiz =
+document.getElementById("quiz");
+
+const progressBar =
+document.getElementById("progressBar");
+
+const submitButton =
+document.getElementById("submitButton");
+
+const errorBox =
+document.getElementById("errorBox");
+
+
+/* =========================================================
+   GENERAR PREGUNTAS
+========================================================= */
+
+questions.forEach((question,index)=>{
+
+const card =
+document.createElement("div");
+
 card.className="card";
 
 let options="";
 
-x.a.forEach((option,j)=>{
+question.a.forEach((option,optionIndex)=>{
 
-options+=`
+options += `
 <label class="option">
-<input type="radio" name="q${i}" value="${j}">
+
+<input
+type="radio"
+name="q${index}"
+value="${optionIndex}"
+>
+
 ${option}
+
 </label>
 `;
 
 });
 
-card.innerHTML=`
-<div class="category">Pregunta ${i+1} • ${x.cat}</div>
-<div class="question">${x.q}</div>
+card.innerHTML = `
+
+<div class="category">
+Pregunta ${index+1} • ${question.cat}
+</div>
+
+<div class="question">
+${question.q}
+</div>
+
 ${options}
+
 `;
 
 multiple.appendChild(card);
 
 });
 
-freeQuestions.forEach((x,i)=>{
 
-let card=document.createElement("div");
+/* =========================================================
+   GENERAR RESPUESTAS LIBRES
+========================================================= */
+
+freeQuestions.forEach((question,index)=>{
+
+const card =
+document.createElement("div");
+
 card.className="card";
 
-card.innerHTML=`
-<div class="category">Pregunta ${i+21} • ${x[0]}</div>
-<div class="question">${x[1]}</div>
-<textarea name="free${i}" placeholder="Escribe tu respuesta aquí..."></textarea>
+card.innerHTML = `
+
+<div class="category">
+Pregunta ${index+21} • ${question[0]}
+</div>
+
+<div class="question">
+${question[1]}
+</div>
+
+<textarea
+name="free${index}"
+placeholder="Escribe tu respuesta aquí..."
+></textarea>
+
 `;
 
 free.appendChild(card);
 
 });
 
+
+/* =========================================================
+   PROGRESO
+========================================================= */
+
 function updateProgress(){
 
 let completed=0;
 
-questions.forEach((q,i)=>{
+questions.forEach((question,index)=>{
 
-if(document.querySelector(`input[name="q${i}"]:checked`)){
+if(
+document.querySelector(
+`input[name="q${index}"]:checked`
+)
+){
+
 completed++;
+
 }
 
 });
 
-freeQuestions.forEach((q,i)=>{
+freeQuestions.forEach((question,index)=>{
 
-let text=document.querySelector(`[name="free${i}"]`);
+const text =
+document.querySelector(
+`[name="free${index}"]`
+);
 
-if(text && text.value.trim().length>0){
+if(
+text &&
+text.value.trim().length>0
+){
+
 completed++;
+
 }
 
 });
 
-document.getElementById("progressBar").style.width=
-(completed/30*100)+"%";
+progressBar.style.width =
+(completed / 30 * 100) + "%";
 
 }
 
-document.getElementById("quiz").addEventListener("input",updateProgress);
+quiz.addEventListener(
+"input",
+updateProgress
+);
 
-document.getElementById("quiz").addEventListener("submit", async function(e){
 
-e.preventDefault();
+/* =========================================================
+   MOSTRAR ERROR
+========================================================= */
 
-const playerName = document.getElementById("playerName").value.trim();
+function showError(message){
+
+errorBox.style.display="block";
+
+errorBox.innerHTML =
+"<strong>⚠️ No se pudo guardar el examen.</strong><br><br>" +
+message +
+"<br><br>" +
+"Si vuelve a aparecer, envíame exactamente este mensaje.";
+
+errorBox.scrollIntoView({
+behavior:"smooth",
+block:"center"
+});
+
+}
+
+
+/* =========================================================
+   ENVIAR EXAMEN
+========================================================= */
+
+quiz.addEventListener(
+"submit",
+async function(event){
+
+event.preventDefault();
+
+errorBox.style.display="none";
+
+const playerName =
+document
+.getElementById("playerName")
+.value
+.trim();
 
 if(!playerName){
-    alert("Escribe tu nombre o nickname antes de entregar el test.");
-    return;
+
+alert(
+"Escribe tu nombre o nickname antes de entregar el test."
+);
+
+return;
+
 }
 
-let score = 0;
-let multipleAnswers = [];
 
-questions.forEach((q,i)=>{
+/* =========================
+   CALCULAR MULTIPLE
+========================= */
 
-    let selected = document.querySelector(`input[name="q${i}"]:checked`);
+let score=0;
 
-    let answer = selected ? Number(selected.value) : null;
+const multipleAnswers=[];
 
-    multipleAnswers.push(answer);
+questions.forEach(
+(question,index)=>{
 
-    if(answer !== null && answer === q.correct){
-        score += 2;
-    }
+const selected =
+document.querySelector(
+`input[name="q${index}"]:checked`
+);
+
+const answer =
+selected
+? Number(selected.value)
+: null;
+
+multipleAnswers.push(answer);
+
+if(
+answer !== null &&
+answer === question.correct
+){
+
+score += 2;
+
+}
 
 });
 
-let freeAnswers = [];
 
-freeQuestions.forEach((q,i)=>{
+/* =========================
+   RESPUESTAS LIBRES
+========================= */
 
-    let answer = document.querySelector(`[name="free${i}"]`).value.trim();
+const freeAnswers=[];
 
-    freeAnswers.push(answer);
+freeQuestions.forEach(
+(question,index)=>{
+
+const textarea =
+document.querySelector(
+`[name="free${index}"]`
+);
+
+freeAnswers.push(
+textarea
+? textarea.value.trim()
+: ""
+);
 
 });
 
-const submission = {
 
-    player_name: playerName,
+/* =========================
+   DATOS
+========================= */
 
-    multiple_answers: multipleAnswers,
+const submission={
 
-    free_answers: freeAnswers,
+player_name:playerName,
 
-    multiple_score: score,
+multiple_answers:multipleAnswers,
 
-    free_score: null,
+free_answers:freeAnswers,
 
-    final_score: null,
+multiple_score:score,
 
-    published: false
+free_score:null,
+
+final_score:null,
+
+published:false
 
 };
 
+
+/* =========================
+   BOTÓN
+========================= */
+
+submitButton.disabled=true;
+
+submitButton.innerText =
+"⏳ ENVIANDO EXAMEN...";
+
+
 try{
 
-    const response = await fetch(
-        SUPABASE_URL + "/rest/v1/submissions",
-        {
-            method:"POST",
+const response =
+await fetch(
 
-            headers:{
-                "apikey":SUPABASE_KEY,
-                "Authorization":"Bearer " + SUPABASE_KEY,
-                "Content-Type":"application/json",
-                "Prefer":"return=representation"
-            },
+SUPABASE_URL +
+"/rest/v1/submissions",
 
-            body:JSON.stringify(submission)
-        }
-    );
+{
 
-    if(!response.ok){
+method:"POST",
 
-        const errorText = await response.text();
+headers:{
 
-        console.error(errorText);
+"apikey":SUPABASE_KEY,
 
-        alert("No se pudo guardar el examen. Inténtalo nuevamente.");
+"Authorization":
+"Bearer " + SUPABASE_KEY,
 
-        return;
-    }
+"Content-Type":
+"application/json",
 
-const savedExam = await response.json();
+"Prefer":
+"return=representation"
 
-console.log("EXAMEN GUARDADO:", savedExam);
+},
 
-const resultCode =
-    Array.isArray(savedExam)
-    ? savedExam[0]?.result_code
-    : savedExam?.result_code;
+body:
+JSON.stringify(submission)
 
-    document.getElementById("quiz").style.display="none";
+}
 
-    document.getElementById("result").style.display="block";
+);
 
-    document.getElementById("score").innerText =
-        score + " / 40";
 
-    let percentage = score / 40 * 100;
+/* =========================
+   ERROR SUPABASE
+========================= */
 
-    let rank = "";
+if(!response.ok){
 
-    if(percentage >= 90){
-        rank = "👑 MASTER";
-    }
-    else if(percentage >= 75){
-        rank = "💎 EXPERTO";
-    }
-    else if(percentage >= 60){
-        rank = "🥇 AVANZADO";
-    }
-    else if(percentage >= 40){
-        rank = "🥈 INTERMEDIO";
-    }
-    else{
-        rank = "🥉 NOVATO";
-    }
+const errorText =
+await response.text();
 
-    document.getElementById("rank").innerText = rank;
+console.error(
+"SUPABASE ERROR:",
+errorText
+);
 
-document.querySelector(".note").innerHTML =
-    "Tu examen fue enviado correctamente.<br><br>" +
-    "<strong>Tu código de resultado:</strong><br>" +
-    "<span style='font-size:24px;font-weight:bold;color:#bcaeff;'>" +
-    (resultCode || "PENDIENTE") +
-    "</span><br><br>" +
-    "Guarda este código. Lo necesitarás para consultar tu resultado.";
+showError(errorText);
 
-    window.scrollTo(0,0);
+submitButton.disabled=false;
+
+submitButton.innerText =
+"⚡ ENTREGAR TEST";
+
+return;
+
+}
+
+
+/* =========================
+   EXAMEN GUARDADO
+========================= */
+
+const savedExam =
+await response.json();
+
+console.log(
+"EXAMEN GUARDADO:",
+savedExam
+);
+
+let resultCode=null;
+
+if(
+Array.isArray(savedExam)
+){
+
+resultCode =
+savedExam[0]?.result_code;
+
+}
+else{
+
+resultCode =
+savedExam?.result_code;
+
+}
+
+
+/* =========================
+   MOSTRAR RESULTADO
+========================= */
+
+quiz.style.display="none";
+
+document
+.getElementById("result")
+.style.display="block";
+
+document
+.getElementById("score")
+.innerText =
+score + " / 40";
+
+
+const percentage =
+(score / 40) * 100;
+
+let rank="";
+
+if(percentage>=90){
+
+rank="👑 MASTER";
+
+}
+else if(percentage>=75){
+
+rank="💎 EXPERTO";
+
+}
+else if(percentage>=60){
+
+rank="🥇 AVANZADO";
+
+}
+else if(percentage>=40){
+
+rank="🥈 INTERMEDIO";
+
+}
+else{
+
+rank="🥉 NOVATO";
+
+}
+
+
+document
+.getElementById("rank")
+.innerText =
+rank;
+
+
+/* =========================
+   CÓDIGO
+========================= */
+
+document
+.getElementById("resultNote")
+.innerHTML =
+
+"Tu examen fue enviado correctamente." +
+
+"<br><br>" +
+
+"<strong>Tu código de resultado:</strong>" +
+
+"<br>" +
+
+"<span style='font-size:24px;font-weight:bold;color:#bcaeff;'>" +
+
+(resultCode || "PENDIENTE") +
+
+"</span>" +
+
+"<br><br>" +
+
+"Guarda este código. Lo necesitarás para consultar tu resultado.";
+
+
+window.scrollTo(0,0);
+
 
 }
 catch(error){
 
-    console.error(error);
+console.error(
+"ERROR:",
+error
+);
 
-    alert("Ocurrió un error al enviar el examen.");
+showError(
+error.message ||
+"Error desconocido."
+);
+
+submitButton.disabled=false;
+
+submitButton.innerText =
+"⚡ ENTREGAR TEST";
 
 }
 
